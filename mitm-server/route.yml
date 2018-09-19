@@ -1,0 +1,81 @@
+---
+- hosts: all
+  vars:
+  tasks:
+    - name: Flush iptables
+      iptables:
+        flush: true
+    - name: Flush iptables nat table
+      iptables: 
+        flush: true
+        table: nat
+    - name: Flush iptables mangle table
+      iptables: 
+        flush: true
+        table: mangle
+    - name: Flush iptables raw table
+      iptables: 
+        flush: true
+        table: raw
+    - iptables:
+        action: append
+        chain: FORWARD
+        in_interface: eth1
+        source: 10.0.3.0/255.255.255.0
+        jump: ACCEPT
+    - iptables:
+        action: append
+        chain: FORWARD
+        in_interface: eth0
+        source: 10.0.3.0/255.255.255.0
+        jump: ACCEPT
+    - name: iptables postrouting
+      iptables:
+        table: nat
+        chain: POSTROUTING
+        out_interface: eth0
+        jump: MASQUERADE
+    - sysctl:
+        name: net.ipv4.ip_forward
+        value: 1
+        sysctl_set: yes
+    - sysctl:
+        name: net.ipv4.conf.all.send_redirects
+        value: 0
+        sysctl_set: yes
+    - iptables:
+        action: insert
+        chain: INPUT
+        rule_num: 1
+        in_interface: lo
+        jump: ACCEPT
+    - iptables:
+        action: insert
+        chain: INPUT
+        rule_num: 1
+        in_interface: eth1
+        jump: ACCEPT
+    - iptables:
+        chain: INPUT
+        ctstate: ESTABLISHED,RELATED
+        jump: ACCEPT
+    - name: Route port 80 through mitmproxy
+      iptables: 
+        table: nat
+        chain: PREROUTING
+        in_interface: eth1
+        protocol: tcp
+        destination_port: 80
+        jump: REDIRECT
+        to_ports: 8080
+    - name: Route port 443 through mitmproxy
+      iptables: 
+        table: nat
+        chain: PREROUTING
+        in_interface: eth1
+        protocol: tcp
+        destination_port: 443
+        jump: REDIRECT
+        to_ports: 8080
+
+

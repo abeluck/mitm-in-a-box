@@ -1,0 +1,49 @@
+- hosts: all
+  tasks:
+    - name: Update APT package cache
+      apt: 
+        update_cache: yes 
+        cache_valid_time: 3600
+        force_apt_get: true
+
+    - name: Upgrade APT to the latest packages
+      apt:
+        upgrade: safe
+        force_apt_get: true
+
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        force_apt_get: true
+      with_items:
+        - locales
+        - curl
+        - vim-tiny
+        - htop
+        - lsof
+        - netcat
+
+    - name: Ensure utf8 locale exists
+      locale_gen:
+        name: en_US.UTF-8
+        state: present
+
+    - name: Create ca cert dir 
+      file:
+        path: /usr/local/share/ca-certificates
+        state: directory
+        owner: root
+        group: root
+
+    - name: Install mitmproxy's certs
+      copy: 
+        src: ../certs/mitmproxy-ca-cert.cer
+        dest: /usr/local/share/ca-certificates/mitmproxy-ca.crt
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Update ca cert store
+      shell: update-ca-certificates --fresh
+

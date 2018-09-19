@@ -1,0 +1,34 @@
+# -*- mode: ruby -*-
+# # vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/stretch64"
+  config.vm.hostname = "mitm-server"
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 2048
+    v.cpus = 2
+  end
+  # disable rsync plugin
+  config.vm.synced_folder '.', '/vagrant', :disabled => true
+  #Workaround to fix an OS X specific issue
+  config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'" 
+  config.vm.network "private_network", ip: "10.0.3.3", netmask: "255.255.255.0", virtualbox__intnet: "mitmnet"
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "bootstrap.yml"
+    ansible.become = true
+  end
+
+  config.vm.provision "ansible", run: "always"  do |ansible|
+    ansible.playbook = "route.yml"
+    ansible.become = true
+  end
+
+  #Provision all utilities
+  #config.vm.provision :shell, path: "bootstrap.sh"
+  #config.vm.provision :shell, path: "route.sh", run: "always"
+  #Enable virtual USB controller
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--usb", "on", "--usbehci", "on"]
+    vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+  end
+end

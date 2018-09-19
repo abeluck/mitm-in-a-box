@@ -1,0 +1,6 @@
+---
+- hosts: all
+  tasks:
+    - name: route through mitmproxy
+      shell: ip route replace default via 10.0.3.3 dev eth1
+

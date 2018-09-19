@@ -1,0 +1,111 @@
+---
+- hosts: all
+  vars:
+  tasks:
+    - name: Update APT package cache
+      apt: 
+        update_cache: yes 
+        cache_valid_time: 3600
+        force_apt_get: true
+
+    - name: Upgrade APT to the latest packages
+      apt:
+        upgrade: safe
+        force_apt_get: true
+
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        force_apt_get: true
+      with_items:
+        - aptitude
+        - locales
+        - curl
+        - vim-tiny
+        - htop
+        - lsof
+        - netcat
+        - ncdu
+        - dnsmasq
+
+          #- name: Setup NTP
+          #include_role:
+          #name: ntp
+
+    - name: Ensure utf8 locale exists
+      locale_gen:
+        name: en_US.UTF-8
+        state: present
+
+    - name: Setup dnsmasq conf dir
+      lineinfile:
+        dest: /etc/dnsmasq.conf
+        state: present
+        regexp: '^conf-dir='
+        line: 'conf-dir=/etc/dnsmasq.d/,*.conf'
+      notify: restart dnsmasq
+
+    - name: Install dnsmasq dhcpconf
+      copy:
+        src: dnsmasq-mitm.conf
+        dest: /etc/dnsmasq.d/mitm
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart dnsmasq
+
+    - name: Install mitmproxy
+      unarchive:
+        src: https://snapshots.mitmproxy.org/4.0.4/mitmproxy-4.0.4-linux.tar.gz
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Create mitmproxy dir
+      file:
+        path: /home/vagrant/.mitmproxy
+        state: directory
+        owner: vagrant
+        group: vagrant
+
+    - name: Push mitmdump.service
+      copy:
+        src: mitmdump.service
+        dest: /lib/systemd/system/mitmdump.service
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart mitmdump
+
+    - name: Install mitmproxy's certs
+      copy: 
+        src: "../certs/{{item}}"
+        dest: "/home/vagrant/.mitmproxy/{{item}}"
+        owner: vagrant
+        group: vagrant
+        mode: 0644
+      notify: restart mitmdump
+      with_items:
+        - mitmproxy-ca-cert.cer
+        - mitmproxy-ca-cert.p12
+        - mitmproxy-ca-cert.pem
+        - mitmproxy-ca.pem
+        - mitmproxy-dhparam.pem
+
+    - name: Enable and start mitmdump service
+      systemd:
+        name: mitmdump
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+  handlers:
+    - name: restart dnsmasq
+      systemd:
+        name: dnsmasq
+        state: restarted
+    - name: restart mitmdump
+      systemd:
+        name: mitmdump
+        state: restarted
+
