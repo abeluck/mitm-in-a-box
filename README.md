@@ -29,44 +29,49 @@ You need this software on your host box:
 
 2. Generate the ca cert
 
-  `make`
+    ```
+    make
+    ```
 
 3. Setup the `mitm-server`
 
-  ```
-  cd mitm-server
-  vagrant up
-  ```
+    ```
+    cd mitm-server
+    vagrant up
+    ```
 
-  At this point you have an internal virtualbox network (named `mitmnet`)
-  running. The `mitm-server` has ip address `10.0.3.3` on this network, and is
-  serving DHCP and NATing for clients.
+    At this point you have an internal virtualbox network (named `mitmnet`)
+    running. The `mitm-server` has ip address `10.0.3.3` on this network, and is
+    serving DHCP and NATing for clients.
 
 4. Setup a test client
 
-  ```
-  cd ../mitm-client
-  vagrant up
-  ```
-  Now you have the vm `mitm-client` with an ip address in the `10.0.3.50 - 250`
-  range which is using `mitm-server` as its default gateway. It has the
-  mitmproxy ca certs installed so it will trust our non-valid ca cert. 
+    ```
+    cd ../mitm-client
+    vagrant up
+    ```
+
+    Now you have the vm `mitm-client` with an ip address in the `10.0.3.50 - 250`
+    range which is using `mitm-server` as its default gateway. It has the
+    mitmproxy ca certs installed so it will trust our non-valid ca cert.
 
 5. Test it out
 
-  **Console 1**
-  ```
-  cd mitm-client
-  vagrant ssh 
-  curl https://yahoo.com # request completes succesfully
-  ```
+    **Console 1**
 
-  **Console 2**
-  ```
-  cd mitm-server
-  vagrant ssh
-  mitmproxy -r mitmdump.log --showhost --no-server # view the stored log
-  ```
+    ```
+    cd mitm-client
+    vagrant ssh
+    curl https://yahoo.com # request completes succesfully
+    ```
+
+    **Console 2**
+
+    ```
+    cd mitm-server
+    vagrant ssh
+    mitmproxy -r mitmdump.log --showhost --no-server # view the stored log
+    ```
 
 ## Credits
 
